@@ -1,0 +1,8 @@
+# Dependencies
+/node_modules
+
+# Emit folder
+/dist
+
+# env file
+.env
