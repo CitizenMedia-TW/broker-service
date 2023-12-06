@@ -3,17 +3,17 @@ import axios from 'axios'
 import jwt from 'jsonwebtoken'
 import 'dotenv/config'
 import crypto from 'crypto'
-import { User, LoginType, Token } from '@/models'
+import { User, Token } from '@/models'
 import { sendMail, resetPassword } from './auth.utils'
 import { JWT_SECRET } from '@/index'
 
+// Return type of login
 interface IUser {
   name: string
   email: string
   avatar: string
   jwtToken: string
   id: string
-  loginType: LoginType
 }
 
 const router = express.Router()
@@ -22,7 +22,6 @@ const router = express.Router()
  * username: string,
  * email: string,
  * password: string,
- * loginTypes: LoginType
  * }
  */
 
@@ -35,7 +34,6 @@ router.post('/google', async (req, res) => {
     console.log('Email verified')
     const foundUser = await User.findOne({
       email: data['email'],
-      loginTypes: LoginType.GOOGLE,
     })
     if (!foundUser) {
       /* Create new user if not found */
@@ -43,12 +41,12 @@ router.post('/google', async (req, res) => {
         const newUser = new User({
           username: data['name'],
           email: data['email'],
-          loginTypes: LoginType.GOOGLE,
           avatar: data['picture'],
         })
-        newUser.save()
+        await newUser.save()
       } catch (err) {
         console.log(err)
+        return res.status(500).send({ message: 'Error creating user' })
       }
     }
 
@@ -67,7 +65,6 @@ router.post('/google', async (req, res) => {
       avatar: data['picture'],
       jwtToken: jwt_token,
       id: foundUser?._id,
-      loginType: LoginType.GOOGLE,
     }
     return res.status(200).send(user)
   } else {
@@ -79,13 +76,18 @@ router.post('/credentials', async (req, res) => {
   /* Check if user exists in database */
   let foundUser = await User.findOne({
     email: req.body.email,
-    loginTypes: LoginType.CREDENTIALS,
   })
 
   if (!foundUser) {
     return res.status(401).send({ message: 'User does not exist' })
   }
-  foundUser = foundUser! // Make foundUser not-null explicitly (Prevent TS error)
+
+  // Login with social media and haven't set password
+  if (!foundUser.password) {
+    return res
+      .status(401)
+      .send({ message: 'User not registered or signed in with social media' })
+  }
 
   /* Check if password matches */
   foundUser.comparePassword(req.body.password, (err: Error, isMatch: any) => {
@@ -113,7 +115,6 @@ router.post('/credentials', async (req, res) => {
       avatar: foundUser?.avatar as string,
       jwtToken: jwtToken,
       id: foundUser?._id as string,
-      loginType: LoginType.CREDENTIALS,
     }
 
     return res.status(200).send(user)
@@ -124,12 +125,10 @@ router.post('/register', async (req, res) => {
   /* Check if user exists in database */
   let foundUser = await User.findOne({
     email: req.body.email,
-    loginTypes: LoginType.CREDENTIALS,
   })
   if (foundUser) {
     return res.status(401).send({ message: 'User already exists' })
   }
-  foundUser = foundUser! // Make foundUser not-null explicitly (Prevent TS error)
 
   /* Create new user */
   /*
@@ -140,16 +139,23 @@ router.post('/register', async (req, res) => {
    * }
    */
   try {
-    const newUser = new User({ ...req.body, loginTypes: LoginType.CREDENTIALS })
+    const newUser = new User({ ...req.body })
     /* Default a unknown avatar */
     newUser.avatar =
       'https://t3.ftcdn.net/jpg/03/53/11/00/360_F_353110097_nbpmfn9iHlxef4EDIhXB1tdTD0lcWhG9.jpg'
-    newUser.save()
+    await newUser.save()
     return res.status(200).send({ message: 'User created' })
   } catch (err) {
     console.log(err)
     return res.status(500).send({ message: 'Error creating user' })
   }
+})
+
+router.get('/have-pass', async (req, res) => {
+  const foundUser = await User.findOne({ email: req.query.email })
+  if (!foundUser) return res.status(400).send({ err: 'User not found' })
+  if (!foundUser.password) return res.status(200).send({ havePass: false })
+  return res.status(200).send({ havePass: true })
 })
 
 router.get('/verify', (req, res) => {
@@ -175,9 +181,13 @@ router.post('/forget-password', async (req, res) => {
    */
   const user = await User.findOne({
     email: req.body.email,
-    loginTypes: LoginType.CREDENTIALS,
   })
   if (!user) return res.status(200).send({ message: 'User not found' }) // status 200 because Nextjs expects 200
+  if (!user.password) {
+    return res
+      .status(200)
+      .send({ message: 'User not registered with credentials' })
+  }
   let token = await Token.findOne({ userId: user._id })
   if (token) await token.deleteOne() // Delete existing token if exists
 
@@ -214,11 +224,7 @@ router.patch('/update-password', async (req, res) => {
   try {
     const user = await User.findOne({ _id: req.body.id })
     if (!user) return res.status(401).send({ message: 'User not found' })
-    if (user.loginTypes != LoginType.CREDENTIALS) {
-      return res
-        .status(200)
-        .send({ message: 'User not registered with credentials' })
-    }
+
     user.comparePassword(
       req.body.oldPassword,
       async (err: any, isMatch: boolean) => {

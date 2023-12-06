@@ -1,6 +1,6 @@
 import mongoose, { Model, Schema } from 'mongoose'
 import bcrypt from 'bcrypt'
-import { IUser, IUserMethods, LoginType } from './IUserInterface'
+import { IUser, IUserMethods } from './IUserInterface'
 
 type UserModel = Model<IUser, {}, IUserMethods>
 
@@ -20,11 +20,6 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>({
   avatar: {
     type: String,
     required: true,
-  },
-  loginTypes: {
-    type: String,
-    required: true,
-    enum: Object.values(LoginType),
   },
   myStories: {
     type: [Schema.Types.ObjectId],
