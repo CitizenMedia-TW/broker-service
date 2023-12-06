@@ -1,5 +1,5 @@
 {
-  "name": "backend",
+  "name": "broker-service",
   "version": "1.0.0",
   "description": "",
   "main": "index.ts",
