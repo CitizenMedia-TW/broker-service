@@ -5,7 +5,7 @@ import 'dotenv/config'
 import crypto from 'crypto'
 import { User, Token } from '@/models'
 import { sendMail, resetPassword } from './auth.utils'
-import { JWT_SECRET } from '@/index'
+import { JWT_SECRET } from '@/src/constants'
 
 // Return type of login
 interface IUser {
