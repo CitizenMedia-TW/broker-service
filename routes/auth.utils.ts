@@ -59,7 +59,7 @@ export async function resetPassword(
 
 import express from 'express'
 import jwt from 'jsonwebtoken'
-import { JWT_SECRET } from '@/index'
+import { JWT_SECRET } from '@/src/constants'
 export function jwt_protect(
   req: express.Request,
   res: express.Response,

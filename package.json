@@ -37,7 +37,7 @@
   },
   "_moduleAliases": {
     "@root": "dist",
-    "@/index": "dist/index",
+    "@/src": "dist/src",
     "@/models": "dist/models"
   }
 }
