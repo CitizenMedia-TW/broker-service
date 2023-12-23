@@ -5,6 +5,17 @@ import jwt from 'jsonwebtoken'
 import { JWT_SECRET } from '@/src/constants'
 const router = express.Router()
 
+router.get('/public-profile/:id', async (req, res) => {
+  const user = await User.findOne({ _id: req.params.id })
+  if (!user) return res.status(400).send({ error: 'User not found' })
+  return res.status(200).send({
+    name: user.username,
+    email: user.email,
+    avatar: user.avatar,
+    profileLinks: user.profileLinks,
+  })
+})
+
 interface DecodedToken {
   id: string
 }
