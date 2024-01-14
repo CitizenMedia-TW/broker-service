@@ -59,7 +59,8 @@ export async function resetPassword(
 
 import express from 'express'
 import jwt from 'jsonwebtoken'
-import { JWT_SECRET } from '@/index'
+import { JWT_SECRET } from '@/src/constants'
+import { JWTContent } from 'jwt-sign'
 export function jwt_protect(
   req: express.Request,
   res: express.Response,
@@ -76,6 +77,7 @@ export function jwt_protect(
       if (err.name == 'TokenExpiredError') {
         console.log('Token expired')
       }
+      req.body.decoded = _decoded as JWTContent
       return res.send({ verified: false })
     } else {
       next()
