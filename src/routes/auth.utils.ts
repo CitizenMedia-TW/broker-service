@@ -77,10 +77,12 @@ export function jwt_protect(
       if (err.name == 'TokenExpiredError') {
         console.log('Token expired')
       }
-      req.body.decoded = _decoded as JWTContent
-      return res.send({ verified: false })
-    } else {
-      next()
+      return res.send({ error: 'Verify not pass', verified: false })
     }
+    if (!_decoded)
+      return res.send({ error: 'Verify not pass', verified: false })
+
+    req.body.decoded = _decoded as JWTContent
+    next()
   })
 }
