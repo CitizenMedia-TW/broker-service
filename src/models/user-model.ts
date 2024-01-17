@@ -30,12 +30,8 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>({
     ref: 'Story',
   },
   profileLinks: {
-    facebook: { type: String },
-    instagram: { type: String },
-    twitter: { type: String },
-    linkedin: { type: String },
-    youtube: { type: String },
-    website: { type: String },
+    type: Map,
+    of: String,
   },
   date: {
     type: Date,

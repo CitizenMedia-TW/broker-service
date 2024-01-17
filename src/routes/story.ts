@@ -72,14 +72,13 @@ router.post('/like', jwt_protect, async (req, res) => {
 router.post('/create', jwt_protect, async (req, res) => {
   /*
    * req.body = {
-   *  id: string,
    *  content: string,
    *  title: string,
    *  subTitle: string,
    *  tags: string[],
    * }
    */
-  const user = await User.findOne({ _id: req.body.id })
+  const user = await User.findOne({ _id: req.body.decoded.id })
   if (!user) return res.status(400).send('User not found')
   const newStory = new Story({
     author: user.username,
