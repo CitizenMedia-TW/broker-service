@@ -3,7 +3,7 @@ import axios from 'axios'
 import jwt from 'jsonwebtoken'
 import 'dotenv/config'
 import crypto from 'crypto'
-import { User, Token } from '@/models'
+import { User, Token } from '@/src/models'
 import { sendMail, resetPassword } from './auth.utils'
 import { JWT_SECRET } from '@/src/constants'
 

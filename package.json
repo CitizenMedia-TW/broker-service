@@ -2,7 +2,7 @@
   "name": "broker-service",
   "version": "1.0.0",
   "description": "",
-  "main": "index.ts",
+  "main": "src/index.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "npx tsc",
@@ -36,8 +36,6 @@
     "typescript": "^5.2.2"
   },
   "_moduleAliases": {
-    "@root": "dist",
-    "@/src": "dist/src",
-    "@/models": "dist/models"
+    "@/src": "dist"
   }
 }

@@ -11,7 +11,7 @@ app.use(cors())
 
 /* Connect to the MongoDB database */
 require('./database')
-require('./src/constants')
+require('./constants')
 
 app.get('/', (_req, res) => {
   res.send('Hello World')
