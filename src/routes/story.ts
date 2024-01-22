@@ -1,8 +1,8 @@
 import express from 'express'
-import { User, Story } from '@/src/models'
+import { User, Story } from '../models'
 import { jwt_protect } from './auth.utils' // Require Headers Authorization
 import jwt from 'jsonwebtoken'
-import { JWT_SECRET } from '@/src/constants'
+import { JWT_SECRET } from '../constants'
 const router = express.Router()
 
 router.use((_req, _res, next) => {
@@ -72,13 +72,14 @@ router.post('/like', jwt_protect, async (req, res) => {
 router.post('/create', jwt_protect, async (req, res) => {
   /*
    * req.body = {
+   *  id: string,
    *  content: string,
    *  title: string,
    *  subTitle: string,
    *  tags: string[],
    * }
    */
-  const user = await User.findOne({ _id: req.body.decoded.id })
+  const user = await User.findOne({ _id: req.body.id })
   if (!user) return res.status(400).send('User not found')
   const newStory = new Story({
     author: user.username,

@@ -3,9 +3,9 @@ import axios from 'axios'
 import jwt from 'jsonwebtoken'
 import 'dotenv/config'
 import crypto from 'crypto'
-import { User, Token } from '@/src/models'
+import { User, Token } from '../models'
 import { sendMail, resetPassword } from './auth.utils'
-import { JWT_SECRET } from '@/src/constants'
+import { JWT_SECRET } from '../constants'
 
 // Return type of login
 interface IUser {
@@ -30,16 +30,26 @@ router.post('/google', async (req, res) => {
   const { data } = await axios.get(
     `https://www.googleapis.com/oauth2/v3/tokeninfo?id_token=${id_token}`
   )
+  if (data['email_verified'] == 'true') {
+    console.log('Email verified')
+    const foundUser = await User.findOne({
+      email: data['email'],
+    })
+    if (!foundUser) {
+      /* Create new user if not found */
+      try {
+        const newUser = new User({
+          username: data['name'],
+          email: data['email'],
+          avatar: data['picture'],
+        })
+        await newUser.save()
+      } catch (err) {
+        console.log(err)
+        return res.status(500).send({ message: 'Error creating user' })
+      }
+    }
 
-  if (data['email_verified'] != 'true') {
-    return res.status(401).send({ error: 'Email not verified' })
-  }
-
-  const foundUser = await User.findOne({
-    email: data['email'],
-  })
-
-  if (foundUser) {
     const jwt_token = jwt.sign(
       {
         name: data['name'],
@@ -57,37 +67,9 @@ router.post('/google', async (req, res) => {
       id: foundUser?._id,
     }
     return res.status(200).send(user)
+  } else {
+    return res.status(401).send({ message: 'Email not verified' })
   }
-
-  /* Create new user if not found */
-  const newUser = new User({
-    username: data['name'],
-    email: data['email'],
-    avatar: data['picture'],
-  })
-  const savedUser = await newUser.save()
-
-  if (!savedUser) {
-    return res.status(500).send({ error: 'Error creating user' })
-  }
-
-  const jwt_token = jwt.sign(
-    {
-      name: data['name'],
-      email: data['email'],
-      id: savedUser._id,
-    },
-    JWT_SECRET,
-    { expiresIn: '180d' } // 180 days
-  )
-  const user: IUser = {
-    name: data['name'],
-    email: data['email'],
-    avatar: data['picture'],
-    jwtToken: jwt_token,
-    id: savedUser._id,
-  }
-  return res.status(200).send(user)
 })
 
 router.post('/credentials', async (req, res) => {
