@@ -198,8 +198,7 @@ POST /user/profile-links
 
 # Test
 <details>
-<summary> /tests </summary>
-
+<summary> tests </summary>
 ```shell
 npm run test
 ```
