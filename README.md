@@ -195,3 +195,13 @@ POST /user/profile-links
 ```
 
 </details>
+
+## Test
+<details>
+<summary> tests </summary>
+
+```shell
+npm run test
+```
+
+</details>
