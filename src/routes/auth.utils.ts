@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer'
 import bcrypt from 'bcrypt'
-import { User, Token } from '@/src/models'
+import { User, Token } from '../models'
 
 const MAIL_HOST = process.env.MAIL_HOST
 const MAIL_USER = process.env.MAIL_USER
@@ -59,7 +59,7 @@ export async function resetPassword(
 
 import express from 'express'
 import jwt from 'jsonwebtoken'
-import { JWT_SECRET } from '@/src/constants'
+import { JWT_SECRET } from '../constants'
 import { JWTContent } from 'jwt-sign'
 export function jwt_protect(
   req: express.Request,
@@ -77,12 +77,10 @@ export function jwt_protect(
       if (err.name == 'TokenExpiredError') {
         console.log('Token expired')
       }
-      return res.send({ error: 'Verify not pass', verified: false })
+      req.body.decoded = _decoded as JWTContent
+      return res.send({ verified: false })
+    } else {
+      next()
     }
-    if (!_decoded)
-      return res.send({ error: 'Verify not pass', verified: false })
-
-    req.body.decoded = _decoded as JWTContent
-    next()
   })
 }
