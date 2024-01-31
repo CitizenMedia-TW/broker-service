@@ -8,7 +8,7 @@ export interface IUser extends mongoose.Document {
   avatar: string
   myStories: mongoose.Types.ObjectId[]
   likedStories: mongoose.Types.ObjectId[]
-  profileLinks: Map<string, string>
+  profileLinks: string[]
   date: Date
 }
 

@@ -23,22 +23,28 @@ router.get('/profile-links', jwt_protect, async (req, res) => {
 router.post('/profile-links', jwt_protect, async (req, res) => {
   /*
    * req.body = {
-   *  profileLinks: {
-   *   string: string // Leave empty string to delete
-   *  }
+   *  remove: string[],
+   *  add: string[]
    * }
    */
   const user = await User.findOne({ _id: req.body.decoded.id })
   if (!user) return res.status(400).send({ error: 'User not found' })
 
-  if (!req.body.profileLinks)
-    return res.send({ error: 'No profile links provided' })
+  if (req.body.remove) {
+    req.body.remove.forEach((link: string) => {
+      const index = user.profileLinks.indexOf(link)
+      if (index == -1) return // If link doesn't exists
+      user.profileLinks.splice(index, 1)
+    })
+  }
 
-  user.profileLinks = user.profileLinks || {}
-  Object.keys(req.body.profileLinks).forEach((key) => {
-    if (req.body.profileLinks[key] === '') user.profileLinks.delete(key)
-    else user.profileLinks.set(key, req.body.profileLinks[key])
-  })
+  if (req.body.add) {
+    req.body.add.forEach((link: string) => {
+      const index = user.profileLinks.indexOf(link)
+      if (index != -1) return // If link already exists
+      user.profileLinks.push(link)
+    })
+  }
 
   const saved = await user.save()
   if (!saved) return res.status(400).send({ error: 'Error saving user' })
