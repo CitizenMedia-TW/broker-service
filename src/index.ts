@@ -26,6 +26,9 @@ app.use('/story', storyRoute)
 import { userRoute } from './routes'
 app.use('/user', userRoute)
 
+const { grpcStoryRoute } = require('./routes/grpc-story')
+app.use('/grpc-story', grpcStoryRoute)
+
 app.listen(8080, () => {
   console.log('Listening on port 8080')
 })
