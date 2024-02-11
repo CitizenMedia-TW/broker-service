@@ -2,7 +2,6 @@ import express from 'express'
 import * as grpc from '@grpc/grpc-js'
 import { jwt_protect } from './auth.utils'
 import { User } from '@/src/models'
-import { Timestamp } from 'google-protobuf/google/protobuf/timestamp_pb'
 
 const router = express.Router()
 const PROTO_PATH =
@@ -23,26 +22,10 @@ const client = new storyProto.StoryService(
 
 // Retrieve story by its id
 router.get('/retrieve-by-id', (req, res) => {
-  const id = req.query.id
-  client.getOneStory({ storyId: id }, (err, response) => {
-    if (err) return res.send(err)
-    const story = response
-    console.log(story)
-    console.log()
-    return res.send(story)
-  })
-})
-
-router.get('/preview', (req, res) => {
-  const id = req.query.id
-  client.getOneStory({ storyId: id }, (err, response) => {
-    if (err) return
-    return res.send({
-      title: response.title,
-      subTitle: response.subTitle,
-      author: response.author,
-      createdAt: response.createdAt,
-    })
+  if (!req.query.id) return res.status(400).send('Story id is required')
+  client.getOneStory({ storyId: req.query.id }, (err, response) => {
+    if (err) return res.status(500).send(err)
+    return res.status(200).send(response)
   })
 })
 
@@ -50,9 +33,6 @@ function toDate(timestamp) {
   return new Date(timestamp.seconds * 1000 + timestamp.nanos / 1e6)
 }
 async function previewStory(id) {
-  // var d = new Date(timestamp.seconds.low);
-  // d.setMilliseconds(timestamp.nanos / 1e6);
-  // console.log (d.toISOString());
   return new Promise((resolve, reject) => {
     client.getOneStory({ storyId: id }, (err, response) => {
       if (err) return reject(err)
@@ -72,19 +52,15 @@ async function previewStory(id) {
 router.get('/retrieve', jwt_protect, async (req, res) => {
   const userId = req.body.decoded.id
   await client.getRecommended({ userId: userId }, (err, response) => {
-    if (err) return res.send(err)
+    if (err) return res.status(500).send(err)
     const list = response.storyIdList
     let listOfStories = []
     list.forEach(async (id) => {
       const story = await previewStory(id)
       listOfStories.push(story)
-      if (listOfStories.length === list.length) {
-        console.log(listOfStories)
-        return res.send(listOfStories)
-      }
+      if (listOfStories.length === list.length)
+        return res.status(200).send(listOfStories)
     })
-    // console.log(list)
-    // return res.send(list)
   })
 })
 
@@ -109,7 +85,7 @@ router.post('/create', jwt_protect, async (req, res) => {
     tags: req.body.tags,
   }
   client.createStory(createStoryRequest, (err, response) => {
-    if (err) return res.send(err)
+    if (err) return res.status(500).send(err)
     return res
       .status(200)
       .send({ message: response.message, storyId: response.storyId })
@@ -125,10 +101,7 @@ router.get('/get-recommended', (req, res) => {
     list.forEach(async (id) => {
       const story = await previewStory(id)
       listOfStories.push(story)
-      if (listOfStories.length === list.length) {
-        console.log(listOfStories)
-        return res.send(listOfStories)
-      }
+      if (listOfStories.length === list.length) return res.send(listOfStories)
     })
   })
 })
