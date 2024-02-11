@@ -72,6 +72,8 @@ router.post('/create', jwt_protect, async (req, res) => {
    *  title: string,
    *  subTitle: string,
    *  tags: string[],
+   *
+   *  confirmList: string[]
    * }
    */
   const user = await User.findOne({ _id: req.body.decoded.id })
@@ -84,6 +86,10 @@ router.post('/create', jwt_protect, async (req, res) => {
     subTitle: req.body.subTitle,
     tags: req.body.tags,
   }
+  /*
+   * Call image-service and confirm the image used in the story.
+   */
+  console.log('Confirm image list: ', req.body.confirmList)
   client.createStory(createStoryRequest, (err, response) => {
     if (err) return res.status(500).send(err)
     return res
