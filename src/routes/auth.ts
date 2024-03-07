@@ -3,9 +3,12 @@ import axios from 'axios'
 import jwt from 'jsonwebtoken'
 import 'dotenv/config'
 import crypto from 'crypto'
+import * as grpc from "@grpc/grpc-js"
 import { User, Token } from '@/src/models'
 import { sendMail, resetPassword } from './auth.utils'
 import { JWT_SECRET } from '@/src/constants'
+import { env } from '../utils/dotenv'
+import * as auth_service from '@/protobuffs/auth-service/auth-service';
 
 // Return type of login
 interface IUser {
@@ -17,6 +20,7 @@ interface IUser {
 }
 
 const router = express.Router()
+const auth_client = new auth_service.AuthServiceClient(env.auth_service_url, grpc.ChannelCredentials.createInsecure())
 
 /* foundUser = {
  * username: string,
@@ -108,7 +112,7 @@ router.post('/credentials', async (req, res) => {
   }
 
   /* Check if password matches */
-  foundUser.comparePassword(req.body.password, (err: Error, isMatch: any) => {
+  foundUser.comparePassword(req.body.password, async (err: Error, isMatch: any) => {
     if (err) {
       return res.status(500).send({ message: 'Error comparing password' })
     }
@@ -116,17 +120,28 @@ router.post('/credentials', async (req, res) => {
       return res.status(401).send({ message: 'Password does not match' })
     }
 
-    /* Create JWT token */
-    const jwtToken = jwt.sign(
-      {
-        name: foundUser?.username,
-        email: foundUser?.email,
-        id: foundUser?._id,
-      },
-      JWT_SECRET,
-      { expiresIn: '180d' } // 180 days
-    )
-
+    const jwtToken = await new Promise((resolve: (value: string) => void, reject) => {
+      const genTokenReq: auth_service.GenerateTokenRequest = {
+        id: foundUser!._id,
+        mail: foundUser!.email,
+        name: foundUser!.username,
+      };
+      auth_client.generateToken(
+        genTokenReq,
+        (err, response) => {
+          if (err) {
+            res.status(500).send({
+                message: "Error occurred when retriving jwtToken from server:",
+            });
+            reject(
+              "Error occurred when retriving jwtToken from server:" + err.message
+            );
+          } else {
+            resolve(response.token);
+          }
+        }
+      );
+    });
     const user: IUser = {
       name: foundUser?.username as string,
       email: foundUser?.email as string,
