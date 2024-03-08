@@ -1,14 +1,8 @@
 import 'dotenv/config';
 import z from "zod";
 
-const _grpcUrlValidator = z.custom<string>((val: unknown) => {
-  return typeof val == "string" && /^grpc(s)?:\/\/[^\s]+$/.test(val);
-}, {
-  message: "Must be a gRPC address"
-});
-
 const dotenvSchema = z.object({
-  auth_service_url: _grpcUrlValidator
+  auth_service_url: z.string().regex(/^[0-9]{1,3}(?:\.[0-9]{1,3}){3}(?:\:[0-9]{1,5})?$/)
 });
 
 // check env and return type-safe variables
