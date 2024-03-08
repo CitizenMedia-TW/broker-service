@@ -1,10 +1,14 @@
 import nodemailer from 'nodemailer'
 import bcrypt from 'bcrypt'
+import * as grpc from "@grpc/grpc-js"
 import { User, Token } from '@/src/models'
+import * as auth_service from '@/protobuffs/auth-service/auth-service'
+import { env } from '../utils/dotenv'
 
 const MAIL_HOST = process.env.MAIL_HOST
 const MAIL_USER = process.env.MAIL_USER
 const MAIL_PASS = process.env.MAIL_PASS
+const AUTH_CLIENT = new auth_service.AuthServiceClient(env.AUTH_SERVICE_URL, grpc.ChannelCredentials.createInsecure())
 
 export async function sendMail(email: string, content: string): Promise<void> {
   const config = {
@@ -85,4 +89,18 @@ export function jwt_protect(
     req.body.decoded = _decoded as JWTContent
     next()
   })
+}
+
+export async function retrieveJwtToken(
+  genTokenReq: auth_service.GenerateTokenRequest
+) {
+  return new Promise((resolve: (jwtToken: string) => void, reject) => {
+    AUTH_CLIENT.generateToken(genTokenReq, (err, response) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(response.token);
+      }
+    });
+  });
 }

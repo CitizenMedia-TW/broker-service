@@ -3,12 +3,9 @@ import axios from 'axios'
 import jwt from 'jsonwebtoken'
 import 'dotenv/config'
 import crypto from 'crypto'
-import * as grpc from "@grpc/grpc-js"
 import { User, Token } from '@/src/models'
-import { sendMail, resetPassword } from './auth.utils'
+import { sendMail, resetPassword, retrieveJwtToken } from './auth.utils'
 import { JWT_SECRET } from '@/src/constants'
-import { env } from '../utils/dotenv'
-import * as auth_service from '@/protobuffs/auth-service/auth-service';
 
 // Return type of login
 interface IUser {
@@ -20,7 +17,6 @@ interface IUser {
 }
 
 const router = express.Router()
-const auth_client = new auth_service.AuthServiceClient(env.AUTH_SERVICE_URL, grpc.ChannelCredentials.createInsecure())
 
 /* foundUser = {
  * username: string,
@@ -120,28 +116,21 @@ router.post('/credentials', async (req, res) => {
       return res.status(401).send({ message: 'Password does not match' })
     }
 
-    const jwtToken = await new Promise((resolve: (value: string) => void, reject) => {
-      const genTokenReq: auth_service.GenerateTokenRequest = {
+    let jwtToken: string;
+    try {
+      jwtToken = await retrieveJwtToken({
         id: String(foundUser!._id),
         mail: foundUser!.email,
         name: foundUser!.username,
-      };
-      auth_client.generateToken(
-        genTokenReq,
-        (err, response) => {
-          if (err) {
-            res.status(500).send({
-                message: "Error occurred when retriving jwtToken from server:",
-            });
-            reject(
-              "Error occurred when retriving jwtToken from server:" + err.message
-            );
-          } else {
-            resolve(response.token);
-          }
-        }
-      );
-    });
+      });
+    } catch (e) {
+      return res.status(500).send({
+        message: `Error occurred when retrieving jwtToken from server: ${
+          e instanceof Error ? e.message : e
+        }`,
+      });
+    }
+
     const user: IUser = {
       name: foundUser?.username as string,
       email: foundUser?.email as string,
