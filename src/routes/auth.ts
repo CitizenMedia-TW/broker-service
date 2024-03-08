@@ -20,7 +20,7 @@ interface IUser {
 }
 
 const router = express.Router()
-const auth_client = new auth_service.AuthServiceClient(env.auth_service_url, grpc.ChannelCredentials.createInsecure())
+const auth_client = new auth_service.AuthServiceClient(env.AUTH_SERVICE_URL, grpc.ChannelCredentials.createInsecure())
 
 /* foundUser = {
  * username: string,

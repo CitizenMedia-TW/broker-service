@@ -2,7 +2,7 @@ import 'dotenv/config';
 import z from "zod";
 
 const dotenvSchema = z.object({
-  auth_service_url: z.string().regex(/^[0-9]{1,3}(?:\.[0-9]{1,3}){3}(?:\:[0-9]{1,5})?$/)
+  AUTH_SERVICE_URL: z.string().regex(/^[0-9]{1,3}(?:\.[0-9]{1,3}){3}(?:\:[0-9]{1,5})?$/)
 });
 
 // check env and return type-safe variables
