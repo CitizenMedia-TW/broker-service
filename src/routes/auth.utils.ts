@@ -74,7 +74,7 @@ export function jwt_protect(
   if (!req.headers.authorization)
     return res.send({ message: 'No token provided', verified: false })
 
-  const token = (req.headers.authorization as string).split(' ')[1]
+  const token = req.headers.authorization;
   jwt.verify(token, JWT_SECRET, (err, _decoded) => {
     if (err) {
       /* console.log(err) */
