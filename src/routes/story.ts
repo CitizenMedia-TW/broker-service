@@ -1,6 +1,6 @@
 import express from 'express'
 import { User, Story } from '@/src/models'
-import { jwt_protect } from './auth.utils' // Require Headers Authorization
+import { jwtProtect } from './auth.utils' // Require Headers Authorization
 import jwt from 'jsonwebtoken'
 import { JWT_SECRET } from '@/src/constants'
 const router = express.Router()
@@ -29,7 +29,7 @@ router.post('/retrieve-by-id', async (req, res) => {
 interface DecodedToken {
   id: string
 }
-router.get('/retrieve', jwt_protect, async (req, res) => {
+router.get('/retrieve', jwtProtect, async (req, res) => {
   const token = (req.headers.authorization as string).split(' ')[1]
   return jwt.verify(token, JWT_SECRET, async (_err, decoded) => {
     decoded = decoded as DecodedToken
@@ -41,7 +41,7 @@ router.get('/retrieve', jwt_protect, async (req, res) => {
   })
 })
 
-router.post('/like', jwt_protect, async (req, res) => {
+router.post('/like', jwtProtect, async (req, res) => {
   /*
    * req.body = {
    *  storyId: string, // The id of the Story
@@ -69,7 +69,7 @@ router.post('/like', jwt_protect, async (req, res) => {
   }
 })
 
-router.post('/create', jwt_protect, async (req, res) => {
+router.post('/create', jwtProtect, async (req, res) => {
   /*
    * req.body = {
    *  content: string,
@@ -104,7 +104,7 @@ router.post('/create', jwt_protect, async (req, res) => {
     .send({ message: 'Story created', newStoryId: newStory._id })
 })
 
-router.post('/comment', jwt_protect, async (req, res) => {
+router.post('/comment', jwtProtect, async (req, res) => {
   /*
    * req.body = {
    * id: Types.ObjectId, // The id of the story

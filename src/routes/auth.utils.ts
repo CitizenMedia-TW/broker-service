@@ -62,7 +62,7 @@ export async function resetPassword(
   return { message: 'Password reset successfully' }
 }
 
-export function jwt_protect(
+export function jwtProtect(
   req: express.Request,
   res: express.Response,
   next: express.NextFunction
