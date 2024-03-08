@@ -122,7 +122,7 @@ router.post('/credentials', async (req, res) => {
 
     const jwtToken = await new Promise((resolve: (value: string) => void, reject) => {
       const genTokenReq: auth_service.GenerateTokenRequest = {
-        id: foundUser!._id,
+        id: String(foundUser!._id),
         mail: foundUser!.email,
         name: foundUser!.username,
       };
