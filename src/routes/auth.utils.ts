@@ -1,7 +1,11 @@
 import nodemailer from 'nodemailer'
 import bcrypt from 'bcrypt'
+import express from 'express'
+import jwt from 'jsonwebtoken'
 import * as grpc from "@grpc/grpc-js"
 import { User, Token } from '@/src/models'
+import { JWT_SECRET } from '@/src/constants'
+import { JWTContent } from 'jwt-sign'
 import * as auth_service from '@/protobuffs/auth-service/auth-service'
 import { env } from '../utils/dotenv'
 
@@ -61,10 +65,6 @@ export async function resetPassword(
   return { message: 'Password reset successfully' }
 }
 
-import express from 'express'
-import jwt from 'jsonwebtoken'
-import { JWT_SECRET } from '@/src/constants'
-import { JWTContent } from 'jwt-sign'
 export function jwt_protect(
   req: express.Request,
   res: express.Response,
