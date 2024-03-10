@@ -40,21 +40,17 @@ router.post('/google', async (req, res) => {
   })
 
   if (foundUser) {
-    const jwt_token = jwt.sign(
-      {
-        name: data['name'],
-        email: data['email'],
-        id: foundUser?._id,
-      },
-      JWT_SECRET,
-      { expiresIn: '180d' } // 180 days
-    )
+    const jwt_token = await retrieveJwtToken({
+      name: data["name"],
+      mail: data["email"],
+      id: String(foundUser!._id),
+    });
     const user: IUser = {
       name: data['name'],
       email: data['email'],
       avatar: data['picture'],
       jwtToken: jwt_token,
-      id: foundUser?._id,
+      id: foundUser!._id,
     }
     return res.status(200).send(user)
   }
@@ -71,15 +67,11 @@ router.post('/google', async (req, res) => {
     return res.status(500).send({ error: 'Error creating user' })
   }
 
-  const jwt_token = jwt.sign(
-    {
-      name: data['name'],
-      email: data['email'],
-      id: savedUser._id,
-    },
-    JWT_SECRET,
-    { expiresIn: '180d' } // 180 days
-  )
+  const jwt_token = await retrieveJwtToken({
+    name: data["name"],
+    mail: data["email"],
+    id: String(savedUser._id),
+  });
   const user: IUser = {
     name: data['name'],
     email: data['email'],
