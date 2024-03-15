@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken'
 import 'dotenv/config'
 import crypto from 'crypto'
 import { User, Token } from '@/src/models'
-import { sendMail, resetPassword } from './auth.utils'
+import { sendMail, resetPassword, retrieveJwtToken } from './auth.utils'
 import { JWT_SECRET } from '@/src/constants'
 
 // Return type of login
@@ -40,21 +40,17 @@ router.post('/google', async (req, res) => {
   })
 
   if (foundUser) {
-    const jwt_token = jwt.sign(
-      {
-        name: data['name'],
-        email: data['email'],
-        id: foundUser?._id,
-      },
-      JWT_SECRET,
-      { expiresIn: '180d' } // 180 days
-    )
+    const jwt_token = await retrieveJwtToken({
+      name: data["name"],
+      mail: data["email"],
+      id: String(foundUser!._id),
+    });
     const user: IUser = {
       name: data['name'],
       email: data['email'],
       avatar: data['picture'],
       jwtToken: jwt_token,
-      id: foundUser?._id,
+      id: foundUser!._id,
     }
     return res.status(200).send(user)
   }
@@ -71,15 +67,11 @@ router.post('/google', async (req, res) => {
     return res.status(500).send({ error: 'Error creating user' })
   }
 
-  const jwt_token = jwt.sign(
-    {
-      name: data['name'],
-      email: data['email'],
-      id: savedUser._id,
-    },
-    JWT_SECRET,
-    { expiresIn: '180d' } // 180 days
-  )
+  const jwt_token = await retrieveJwtToken({
+    name: data["name"],
+    mail: data["email"],
+    id: String(savedUser._id),
+  });
   const user: IUser = {
     name: data['name'],
     email: data['email'],
@@ -108,7 +100,7 @@ router.post('/credentials', async (req, res) => {
   }
 
   /* Check if password matches */
-  foundUser.comparePassword(req.body.password, (err: Error, isMatch: any) => {
+  foundUser.comparePassword(req.body.password, async (err: Error, isMatch: any) => {
     if (err) {
       return res.status(500).send({ message: 'Error comparing password' })
     }
@@ -116,16 +108,20 @@ router.post('/credentials', async (req, res) => {
       return res.status(401).send({ message: 'Password does not match' })
     }
 
-    /* Create JWT token */
-    const jwtToken = jwt.sign(
-      {
-        name: foundUser?.username,
-        email: foundUser?.email,
-        id: foundUser?._id,
-      },
-      JWT_SECRET,
-      { expiresIn: '180d' } // 180 days
-    )
+    let jwtToken: string;
+    try {
+      jwtToken = await retrieveJwtToken({
+        id: String(foundUser!._id),
+        mail: foundUser!.email,
+        name: foundUser!.username,
+      });
+    } catch (e) {
+      return res.status(500).send({
+        message: `Error occurred when retrieving jwtToken from server: ${
+          e instanceof Error ? e.message : e
+        }`,
+      });
+    }
 
     const user: IUser = {
       name: foundUser?.username as string,

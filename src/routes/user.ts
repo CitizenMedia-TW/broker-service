@@ -1,6 +1,6 @@
 import express from 'express'
 import { User } from '@/src/models'
-import { jwt_protect } from './auth.utils' // Require Headers Authorization
+import { jwtProtect } from './auth.utils' // Require Headers Authorization
 const router = express.Router()
 
 router.get('/public-profile/:id', async (req, res) => {
@@ -14,13 +14,13 @@ router.get('/public-profile/:id', async (req, res) => {
   })
 })
 
-router.get('/profile-links', jwt_protect, async (req, res) => {
+router.get('/profile-links', jwtProtect, async (req, res) => {
   const user = await User.findOne({ _id: req.body.decoded.id })
   if (!user) return res.status(400).send({ error: 'User not found' })
   return res.status(200).send({ profileLinks: user.profileLinks ?? {} })
 })
 
-router.post('/profile-links', jwt_protect, async (req, res) => {
+router.post('/profile-links', jwtProtect, async (req, res) => {
   /*
    * req.body = {
    *  remove: string[],

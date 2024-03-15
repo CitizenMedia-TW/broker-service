@@ -8,12 +8,15 @@ interface IToken {
   createdAt: Date
 }
 
-const tokenSchema = new Schema<IToken>({
+const schema = {
   userId: { type: Schema.Types.ObjectId, required: true, ref: 'User' },
   email: { type: String, required: true },
   token: { type: String, required: true },
   createdAt: { type: Date, required: true, default: Date.now, expires: 1800 }, // Expires in 30 minutes
-})
+}
+const options = { collection: 'Tokens' }
+
+const tokenSchema = new Schema<IToken>(schema, options)
 
 tokenSchema.pre('save', async function (next: Function): Promise<void> {
   if (this.isNew) {

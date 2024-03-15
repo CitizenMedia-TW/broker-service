@@ -4,8 +4,7 @@ import { IUser, IUserMethods } from './IUserInterface'
 
 type UserModel = Model<IUser, {}, IUserMethods>
 
-/* Remember to modify the interface in './IUserInterface.ts' */
-const userSchema = new Schema<IUser, UserModel, IUserMethods>({
+const schema = {
   username: {
     type: String,
     required: true,
@@ -37,7 +36,12 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>({
     required: true,
     default: Date.now,
   },
-})
+}
+
+const options = { collection: 'Users' }
+
+/* Remember to modify the interface in './IUserInterface.ts' */
+const userSchema = new Schema<IUser, UserModel, IUserMethods>(schema, options)
 
 userSchema.pre('save', async function (next: Function): Promise<void> {
   /* `this` represents the user document */

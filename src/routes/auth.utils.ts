@@ -1,10 +1,15 @@
 import nodemailer from 'nodemailer'
 import bcrypt from 'bcrypt'
+import express from 'express'
+import * as grpc from "@grpc/grpc-js"
 import { User, Token } from '@/src/models'
+import * as auth_service from '@/protobuffs/auth-service/auth-service'
+import { env } from '../utils/dotenv'
 
 const MAIL_HOST = process.env.MAIL_HOST
 const MAIL_USER = process.env.MAIL_USER
 const MAIL_PASS = process.env.MAIL_PASS
+const authClient = new auth_service.AuthServiceClient(env.AUTH_SERVICE_URL, grpc.ChannelCredentials.createInsecure())
 
 export async function sendMail(email: string, content: string): Promise<void> {
   const config = {
@@ -57,11 +62,7 @@ export async function resetPassword(
   return { message: 'Password reset successfully' }
 }
 
-import express from 'express'
-import jwt from 'jsonwebtoken'
-import { JWT_SECRET } from '@/src/constants'
-import { JWTContent } from 'jwt-sign'
-export function jwt_protect(
+export function jwtProtect(
   req: express.Request,
   res: express.Response,
   next: express.NextFunction
@@ -70,19 +71,34 @@ export function jwt_protect(
   if (!req.headers.authorization)
     return res.send({ message: 'No token provided', verified: false })
 
-  const token = (req.headers.authorization as string).split(' ')[1]
-  jwt.verify(token, JWT_SECRET, (err, _decoded) => {
+  const token = req.headers.authorization;
+  authClient.verifyToken({ token: token }, (err, response) => {
     if (err) {
-      /* console.log(err) */
-      if (err.name == 'TokenExpiredError') {
-        console.log('Token expired')
-      }
-      return res.send({ error: 'Verify not pass', verified: false })
+      console.warn("Error occurred when verifying JWT:" + err.message);
+      return res
+        .status(500)
+        .send({ message: "Error occurred when verifying JWT" });
     }
-    if (!_decoded)
-      return res.send({ error: 'Verify not pass', verified: false })
+    if (response.message === "Failed" || response.jwtContent === undefined) {
+      return res
+        .status(400)
+        .send({ error: "Verify not pass", verified: false });
+    }
+    req.body.decoded = response.jwtContent;
+    next();
+  });
+}
 
-    req.body.decoded = _decoded as JWTContent
-    next()
-  })
+export async function retrieveJwtToken(
+  genTokenReq: auth_service.GenerateTokenRequest
+) {
+  return new Promise((resolve: (jwtToken: string) => void, reject) => {
+    authClient.generateToken(genTokenReq, (err, response) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(response.token);
+      }
+    });
+  });
 }
