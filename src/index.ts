@@ -13,8 +13,13 @@ app.use(cors())
 require('./database')
 require('./constants')
 
-app.get('/', (_req, res) => {
-  res.send('Hello World')
+import { getUser } from './database/get'
+import { patchLinks } from './database/patch'
+
+app.get('/', async (_req, res) => {
+  const u = await getUser('user1@example.com')
+  const p = await patchLinks('user1@example.com', 'https://profile.com/0')
+  res.send({ u, p })
 })
 
 import { authRoute } from './routes'
