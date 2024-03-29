@@ -164,9 +164,12 @@ router.post('/register', async (req, res) => {
 })
 
 router.get('/have-pass', async (req, res) => {
-  const foundUser = await User.findOne({ email: req.query.email })
+  if (typeof req.query.email !== "string") {
+    return res.status(400).send({ err: "User not found" });
+  }
+  const foundUser = await getUser(req.query.email);
   if (!foundUser) return res.status(400).send({ err: 'User not found' })
-  if (!foundUser.password) return res.status(200).send({ havePass: false })
+  if (!foundUser.pass) return res.status(200).send({ havePass: false });
   return res.status(200).send({ havePass: true })
 })
 
