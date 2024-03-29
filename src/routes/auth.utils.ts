@@ -69,6 +69,10 @@ export function comparePassword(
   return bcrypt.compareSync(plainText, encryptedText);
 }
 
+export function encryptPassword(plainText: string) {
+  return bcrypt.hashSync(plainText, 10);
+}
+
 export function jwtProtect(
   req: express.Request,
   res: express.Response,

@@ -1,6 +1,6 @@
 import { query } from './index'
 
-type User = {
+export type User = {
   mail: string
   name: string
   pass: string

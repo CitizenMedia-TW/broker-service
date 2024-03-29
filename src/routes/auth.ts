@@ -4,9 +4,10 @@ import jwt from 'jsonwebtoken'
 import 'dotenv/config'
 import crypto from 'crypto'
 import { User, Token } from '@/src/models'
-import { sendMail, resetPassword, retrieveJwtToken, comparePassword } from './auth.utils'
+import { sendMail, resetPassword, retrieveJwtToken, comparePassword, encryptPassword } from './auth.utils'
 import { JWT_SECRET } from '@/src/constants'
-import { getUser } from '../database/get'
+import { getUser, type User as SqlUser } from '../database/get'
+import { createUser } from '../database/post'
 
 // Return type of login
 interface IUser {
@@ -101,27 +102,27 @@ router.post('/credentials', async (req, res) => {
   /* Check if password matches */
   if (comparePassword(req.body.password, foundUser.pass) === false) {
     return res.status(401).send({ message: "Password does not match" });
-    }
-    let jwtToken: string;
-    try {
-      jwtToken = await retrieveJwtToken({
+  }
+  let jwtToken: string;
+  try {
+    jwtToken = await retrieveJwtToken({
       id: "0",
       mail: foundUser.mail,
       name: foundUser.name,
-      });
-    } catch (e) {
-      return res.status(500).send({
-        message: `Error occurred when retrieving jwtToken from server: ${
-          e instanceof Error ? e.message : e
-        }`,
-      });
-    }
+    });
+  } catch (e) {
+    return res.status(500).send({
+      message: `Error occurred when retrieving jwtToken from server: ${
+        e instanceof Error ? e.message : e
+      }`,
+    });
+  }
 
-    const user: IUser = {
+  const user: IUser = {
     name: foundUser.name,
     email: foundUser.mail,
     avatar: foundUser.avatar,
-      jwtToken: jwtToken,
+    jwtToken: jwtToken,
     id: "0",
   };
 
@@ -130,9 +131,7 @@ router.post('/credentials', async (req, res) => {
 
 router.post('/register', async (req, res) => {
   /* Check if user exists in database */
-  let foundUser = await User.findOne({
-    email: req.body.email,
-  })
+  const foundUser = await getUser(req.body.email);
   if (foundUser) {
     return res.status(401).send({ message: 'User already exists' })
   }
@@ -146,11 +145,17 @@ router.post('/register', async (req, res) => {
    * }
    */
   try {
-    const newUser = new User({ ...req.body })
+    const newUser = req.body as SqlUser;
     /* Default a unknown avatar */
     newUser.avatar =
       'https://t3.ftcdn.net/jpg/03/53/11/00/360_F_353110097_nbpmfn9iHlxef4EDIhXB1tdTD0lcWhG9.jpg'
-    await newUser.save()
+    try {
+      newUser.pass = encryptPassword(newUser.pass);
+    } catch (e) {
+      console.log("error when encrypting new user's password", e);
+      return res.status(400).send({ message: "invalid password" });
+    }
+    await createUser(newUser);
     return res.status(200).send({ message: 'User created' })
   } catch (err) {
     console.log(err)
