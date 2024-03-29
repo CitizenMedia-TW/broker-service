@@ -139,9 +139,9 @@ router.post('/register', async (req, res) => {
   /* Create new user */
   /*
    * req.body = {
-   *  username: string,
-   *  email: string,
-   *  password: string
+   *  name: string,
+   *  mail: string,
+   *  pass: string
    * }
    */
   try {
