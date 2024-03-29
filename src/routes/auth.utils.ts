@@ -62,6 +62,13 @@ export async function resetPassword(
   return { message: 'Password reset successfully' }
 }
 
+export function comparePassword(
+  plainText: string | Buffer,
+  encryptedText: string
+) {
+  return bcrypt.compareSync(plainText, encryptedText);
+}
+
 export function jwtProtect(
   req: express.Request,
   res: express.Response,

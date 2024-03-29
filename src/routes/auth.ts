@@ -4,8 +4,9 @@ import jwt from 'jsonwebtoken'
 import 'dotenv/config'
 import crypto from 'crypto'
 import { User, Token } from '@/src/models'
-import { sendMail, resetPassword, retrieveJwtToken } from './auth.utils'
+import { sendMail, resetPassword, retrieveJwtToken, comparePassword } from './auth.utils'
 import { JWT_SECRET } from '@/src/constants'
+import { getUser } from '../database/get'
 
 // Return type of login
 interface IUser {
@@ -84,36 +85,29 @@ router.post('/google', async (req, res) => {
 
 router.post('/credentials', async (req, res) => {
   /* Check if user exists in database */
-  let foundUser = await User.findOne({
-    email: req.body.email,
-  })
+  let foundUser = await getUser(req.body.email);
 
   if (!foundUser) {
     return res.status(401).send({ message: 'User does not exist' })
   }
 
   // Login with social media and haven't set password
-  if (!foundUser.password) {
+  if (!foundUser.pass) {
     return res
       .status(401)
-      .send({ message: 'User not registered or signed in with social media' })
+      .send({ message: "User not registered or signed in with social media" });
   }
 
   /* Check if password matches */
-  foundUser.comparePassword(req.body.password, async (err: Error, isMatch: any) => {
-    if (err) {
-      return res.status(500).send({ message: 'Error comparing password' })
+  if (comparePassword(req.body.password, foundUser.pass) === false) {
+    return res.status(401).send({ message: "Password does not match" });
     }
-    if (!isMatch) {
-      return res.status(401).send({ message: 'Password does not match' })
-    }
-
     let jwtToken: string;
     try {
       jwtToken = await retrieveJwtToken({
-        id: String(foundUser!._id),
-        mail: foundUser!.email,
-        name: foundUser!.username,
+      id: "0",
+      mail: foundUser.mail,
+      name: foundUser.name,
       });
     } catch (e) {
       return res.status(500).send({
@@ -124,15 +118,14 @@ router.post('/credentials', async (req, res) => {
     }
 
     const user: IUser = {
-      name: foundUser?.username as string,
-      email: foundUser?.email as string,
-      avatar: foundUser?.avatar as string,
+    name: foundUser.name,
+    email: foundUser.mail,
+    avatar: foundUser.avatar,
       jwtToken: jwtToken,
-      id: foundUser?._id as string,
-    }
+    id: "0",
+  };
 
-    return res.status(200).send(user)
-  })
+  return res.status(200).send(user);
 })
 
 router.post('/register', async (req, res) => {
