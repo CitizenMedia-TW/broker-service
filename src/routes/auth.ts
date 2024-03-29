@@ -186,6 +186,7 @@ router.get('/verify', (req, res) => {
 })
 
 router.post('/forget-password', async (req, res) => {
+  // TODO: 這個route目前因為Token的table尚未更新、依賴在新的資料庫中不存在的使用者id上，不能打
   /*
    * req.body = {
    * email: string
@@ -216,6 +217,7 @@ router.post('/forget-password', async (req, res) => {
 })
 
 router.post('/reset-password', async (req, res) => {
+  // TODO: 這個route目前因為Token的table尚未更新、依賴在新的資料庫中不存在的使用者id上，不能打
   /* resetPassword(id, password, token) */
   const result = await resetPassword(
     req.body.id,
@@ -227,6 +229,7 @@ router.post('/reset-password', async (req, res) => {
 })
 
 router.patch('/update-password', async (req, res) => {
+  // TODO: 這個route目前因為Token的table尚未更新、依賴在新的資料庫中不存在的使用者id上，不能打
   /*
    * req.body = {
    * id: string, // User id
