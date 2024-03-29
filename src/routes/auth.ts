@@ -149,11 +149,8 @@ router.post('/register', async (req, res) => {
     /* Default a unknown avatar */
     newUser.avatar =
       'https://t3.ftcdn.net/jpg/03/53/11/00/360_F_353110097_nbpmfn9iHlxef4EDIhXB1tdTD0lcWhG9.jpg'
-    try {
+    if (typeof newUser.pass === "string") {
       newUser.pass = encryptPassword(newUser.pass);
-    } catch (e) {
-      console.log("error when encrypting new user's password", e);
-      return res.status(400).send({ message: "invalid password" });
     }
     await createUser(newUser);
     return res.status(200).send({ message: 'User created' })
