@@ -1,6 +1,6 @@
 import { query } from './index'
 
-type NewUser = {
+export type NewUser = {
   name: string
   mail: string
   avatar: string

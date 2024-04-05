@@ -7,7 +7,7 @@ import { User, Token } from '@/src/models'
 import { sendMail, resetPassword, retrieveJwtToken, comparePassword, encryptPassword } from './auth.utils'
 import { JWT_SECRET } from '@/src/constants'
 import { getUser, type User as SqlUser } from '../database/get'
-import { createUser } from '../database/post'
+import { type NewUser, createUser } from '../database/post'
 
 // Return type of login
 interface IUser {
@@ -37,49 +37,46 @@ router.post('/google', async (req, res) => {
     return res.status(401).send({ error: 'Email not verified' })
   }
 
-  const foundUser = await User.findOne({
-    email: data['email'],
-  })
+  const foundUser = await getUser(data["email"]);
 
   if (foundUser) {
     const jwt_token = await retrieveJwtToken({
       name: data["name"],
       mail: data["email"],
-      id: String(foundUser!._id),
+      id: "0",
     });
     const user: IUser = {
       name: data['name'],
       email: data['email'],
       avatar: data['picture'],
       jwtToken: jwt_token,
-      id: foundUser!._id,
+      id: "0",
     }
     return res.status(200).send(user)
   }
 
   /* Create new user if not found */
-  const newUser = new User({
-    username: data['name'],
-    email: data['email'],
-    avatar: data['picture'],
-  })
-  const savedUser = await newUser.save()
-
-  if (!savedUser) {
+  const newUser: NewUser = {
+    name: data["name"],
+    mail: data["email"],
+    avatar: data["picture"],
+  };
+  const saveResult = await createUser(newUser);
+  if (saveResult.error) {
     return res.status(500).send({ error: 'Error creating user' })
   }
 
   const jwt_token = await retrieveJwtToken({
     name: data["name"],
     mail: data["email"],
-    id: String(savedUser._id),
+    id: "0",
   });
   const user: IUser = {
     name: data['name'],
     email: data['email'],
     avatar: data['picture'],
     jwtToken: jwt_token,
-    id: savedUser._id,
+    id: "0",
   }
   return res.status(200).send(user)
 })
