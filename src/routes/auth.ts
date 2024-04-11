@@ -43,7 +43,6 @@ router.post('/google', async (req, res) => {
     const jwt_token = await retrieveJwtToken({
       name: data["name"],
       mail: data["email"],
-      id: "0",
     });
     const user: IUser = {
       name: data['name'],
@@ -69,7 +68,6 @@ router.post('/google', async (req, res) => {
   const jwt_token = await retrieveJwtToken({
     name: data["name"],
     mail: data["email"],
-    id: "0",
   });
   const user: IUser = {
     name: data['name'],
@@ -103,7 +101,6 @@ router.post('/credentials', async (req, res) => {
   let jwtToken: string;
   try {
     jwtToken = await retrieveJwtToken({
-      id: "0",
       mail: foundUser.mail,
       name: foundUser.name,
     });
