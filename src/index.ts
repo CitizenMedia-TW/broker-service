@@ -13,8 +13,21 @@ app.use(cors())
 require('./database')
 require('./constants')
 
-app.get('/', (_req, res) => {
-  res.send('Hello World')
+import { getUser } from './database/get'
+import { patchLinks } from './database/patch'
+import { createUser } from './database/post'
+import { deleteUser } from './database/delete'
+
+app.get('/', async (_req, res) => {
+  const name = 'dev'
+  const mail = 'dev@dev.com'
+  const avatar = 'https://avatar.com'
+  // const i = await createUser({ name, mail, avatar })
+  // const i = await deleteUser(mail)
+  // const u = await getUser('user1@example.com')
+  // const p = await patchLinks('user1@example.com', 'https://profile.com/0')
+  console.log()
+  res.send()
 })
 
 import { authRoute } from './routes'

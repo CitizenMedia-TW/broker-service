@@ -4,8 +4,10 @@ import jwt from 'jsonwebtoken'
 import 'dotenv/config'
 import crypto from 'crypto'
 import { User, Token } from '@/src/models'
-import { sendMail, resetPassword, retrieveJwtToken } from './auth.utils'
+import { sendMail, resetPassword, retrieveJwtToken, comparePassword, encryptPassword } from './auth.utils'
 import { JWT_SECRET } from '@/src/constants'
+import { getUser, type User as SqlUser } from '../database/get'
+import { type NewUser, createUser } from '../database/post'
 
 // Return type of login
 interface IUser {
@@ -35,111 +37,98 @@ router.post('/google', async (req, res) => {
     return res.status(401).send({ error: 'Email not verified' })
   }
 
-  const foundUser = await User.findOne({
-    email: data['email'],
-  })
+  const foundUser = await getUser(data["email"]);
 
   if (foundUser) {
     const jwt_token = await retrieveJwtToken({
       name: data["name"],
       mail: data["email"],
-      id: String(foundUser!._id),
+      id: "0",
     });
     const user: IUser = {
       name: data['name'],
       email: data['email'],
       avatar: data['picture'],
       jwtToken: jwt_token,
-      id: foundUser!._id,
+      id: "0",
     }
     return res.status(200).send(user)
   }
 
   /* Create new user if not found */
-  const newUser = new User({
-    username: data['name'],
-    email: data['email'],
-    avatar: data['picture'],
-  })
-  const savedUser = await newUser.save()
-
-  if (!savedUser) {
+  const newUser: NewUser = {
+    name: data["name"],
+    mail: data["email"],
+    avatar: data["picture"],
+  };
+  const saveResult = await createUser(newUser);
+  if (saveResult.error) {
     return res.status(500).send({ error: 'Error creating user' })
   }
 
   const jwt_token = await retrieveJwtToken({
     name: data["name"],
     mail: data["email"],
-    id: String(savedUser._id),
+    id: "0",
   });
   const user: IUser = {
     name: data['name'],
     email: data['email'],
     avatar: data['picture'],
     jwtToken: jwt_token,
-    id: savedUser._id,
+    id: "0",
   }
   return res.status(200).send(user)
 })
 
 router.post('/credentials', async (req, res) => {
   /* Check if user exists in database */
-  let foundUser = await User.findOne({
-    email: req.body.email,
-  })
+  let foundUser = await getUser(req.body.email);
 
   if (!foundUser) {
     return res.status(401).send({ message: 'User does not exist' })
   }
 
   // Login with social media and haven't set password
-  if (!foundUser.password) {
+  if (!foundUser.pass) {
     return res
       .status(401)
-      .send({ message: 'User not registered or signed in with social media' })
+      .send({ message: "User not registered or signed in with social media" });
   }
 
   /* Check if password matches */
-  foundUser.comparePassword(req.body.password, async (err: Error, isMatch: any) => {
-    if (err) {
-      return res.status(500).send({ message: 'Error comparing password' })
-    }
-    if (!isMatch) {
-      return res.status(401).send({ message: 'Password does not match' })
-    }
+  if (comparePassword(req.body.password, foundUser.pass) === false) {
+    return res.status(401).send({ message: "Password does not match" });
+  }
+  let jwtToken: string;
+  try {
+    jwtToken = await retrieveJwtToken({
+      id: "0",
+      mail: foundUser.mail,
+      name: foundUser.name,
+    });
+  } catch (e) {
+    return res.status(500).send({
+      message: `Error occurred when retrieving jwtToken from server: ${
+        e instanceof Error ? e.message : e
+      }`,
+    });
+  }
 
-    let jwtToken: string;
-    try {
-      jwtToken = await retrieveJwtToken({
-        id: String(foundUser!._id),
-        mail: foundUser!.email,
-        name: foundUser!.username,
-      });
-    } catch (e) {
-      return res.status(500).send({
-        message: `Error occurred when retrieving jwtToken from server: ${
-          e instanceof Error ? e.message : e
-        }`,
-      });
-    }
+  const user: IUser = {
+    name: foundUser.name,
+    email: foundUser.mail,
+    avatar: foundUser.avatar,
+    jwtToken: jwtToken,
+    id: "0",
+  };
 
-    const user: IUser = {
-      name: foundUser?.username as string,
-      email: foundUser?.email as string,
-      avatar: foundUser?.avatar as string,
-      jwtToken: jwtToken,
-      id: foundUser?._id as string,
-    }
-
-    return res.status(200).send(user)
-  })
+  return res.status(200).send(user);
 })
 
 router.post('/register', async (req, res) => {
   /* Check if user exists in database */
-  let foundUser = await User.findOne({
-    email: req.body.email,
-  })
+  const foundUser = await getUser(req.body.email);
   if (foundUser) {
     return res.status(401).send({ message: 'User already exists' })
   }
@@ -147,17 +136,20 @@ router.post('/register', async (req, res) => {
   /* Create new user */
   /*
    * req.body = {
-   *  username: string,
-   *  email: string,
-   *  password: string
+   *  name: string,
+   *  mail: string,
+   *  pass: string
    * }
    */
   try {
-    const newUser = new User({ ...req.body })
+    const newUser = req.body as SqlUser;
     /* Default a unknown avatar */
     newUser.avatar =
       'https://t3.ftcdn.net/jpg/03/53/11/00/360_F_353110097_nbpmfn9iHlxef4EDIhXB1tdTD0lcWhG9.jpg'
-    await newUser.save()
+    if (typeof newUser.pass === "string") {
+      newUser.pass = encryptPassword(newUser.pass);
+    }
+    await createUser(newUser);
     return res.status(200).send({ message: 'User created' })
   } catch (err) {
     console.log(err)
@@ -166,9 +158,12 @@ router.post('/register', async (req, res) => {
 })
 
 router.get('/have-pass', async (req, res) => {
-  const foundUser = await User.findOne({ email: req.query.email })
+  if (typeof req.query.email !== "string") {
+    return res.status(400).send({ err: "User not found" });
+  }
+  const foundUser = await getUser(req.query.email);
   if (!foundUser) return res.status(400).send({ err: 'User not found' })
-  if (!foundUser.password) return res.status(200).send({ havePass: false })
+  if (!foundUser.pass) return res.status(200).send({ havePass: false });
   return res.status(200).send({ havePass: true })
 })
 
@@ -188,6 +183,7 @@ router.get('/verify', (req, res) => {
 })
 
 router.post('/forget-password', async (req, res) => {
+  // TODO: 這個route目前因為Token的table尚未更新、依賴在新的資料庫中不存在的使用者id上，不能打
   /*
    * req.body = {
    * email: string
@@ -218,6 +214,7 @@ router.post('/forget-password', async (req, res) => {
 })
 
 router.post('/reset-password', async (req, res) => {
+  // TODO: 這個route目前因為Token的table尚未更新、依賴在新的資料庫中不存在的使用者id上，不能打
   /* resetPassword(id, password, token) */
   const result = await resetPassword(
     req.body.id,
@@ -229,6 +226,7 @@ router.post('/reset-password', async (req, res) => {
 })
 
 router.patch('/update-password', async (req, res) => {
+  // TODO: 這個route目前因為Token的table尚未更新、依賴在新的資料庫中不存在的使用者id上，不能打
   /*
    * req.body = {
    * id: string, // User id
