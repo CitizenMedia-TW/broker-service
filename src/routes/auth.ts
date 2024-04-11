@@ -4,7 +4,13 @@ import jwt from 'jsonwebtoken'
 import 'dotenv/config'
 import crypto from 'crypto'
 import { User, Token } from '@/src/models'
-import { sendMail, resetPassword, retrieveJwtToken, comparePassword, encryptPassword } from './auth.utils'
+import {
+  sendMail,
+  resetPassword,
+  retrieveJwtToken,
+  comparePassword,
+  encryptPassword,
+} from './auth.utils'
 import { JWT_SECRET } from '@/src/constants'
 import { getUser, type User as SqlUser } from '../database/get'
 import { type NewUser, createUser } from '../database/post'
@@ -37,51 +43,51 @@ router.post('/google', async (req, res) => {
     return res.status(401).send({ error: 'Email not verified' })
   }
 
-  const foundUser = await getUser(data["email"]);
+  const foundUser = await getUser(data['email'])
 
   if (foundUser) {
     const jwt_token = await retrieveJwtToken({
-      name: data["name"],
-      mail: data["email"],
-    });
+      name: data['name'],
+      mail: data['email'],
+    })
     const user: IUser = {
       name: data['name'],
       email: data['email'],
       avatar: data['picture'],
       jwtToken: jwt_token,
-      id: "0",
+      id: '0',
     }
     return res.status(200).send(user)
   }
 
   /* Create new user if not found */
   const newUser: NewUser = {
-    name: data["name"],
-    mail: data["email"],
-    avatar: data["picture"],
-  };
-  const saveResult = await createUser(newUser);
+    name: data['name'],
+    mail: data['email'],
+    avatar: data['picture'],
+  }
+  const saveResult = await createUser(newUser)
   if (saveResult.error) {
     return res.status(500).send({ error: 'Error creating user' })
   }
 
   const jwt_token = await retrieveJwtToken({
-    name: data["name"],
-    mail: data["email"],
-  });
+    name: data['name'],
+    mail: data['email'],
+  })
   const user: IUser = {
     name: data['name'],
     email: data['email'],
     avatar: data['picture'],
     jwtToken: jwt_token,
-    id: "0",
+    id: '0',
   }
   return res.status(200).send(user)
 })
 
 router.post('/credentials', async (req, res) => {
   /* Check if user exists in database */
-  let foundUser = await getUser(req.body.email);
+  let foundUser = await getUser(req.body.email)
 
   if (!foundUser) {
     return res.status(401).send({ message: 'User does not exist' })
@@ -91,25 +97,25 @@ router.post('/credentials', async (req, res) => {
   if (!foundUser.pass) {
     return res
       .status(401)
-      .send({ message: "User not registered or signed in with social media" });
+      .send({ message: 'User not registered or signed in with social media' })
   }
 
   /* Check if password matches */
   if (comparePassword(req.body.password, foundUser.pass) === false) {
-    return res.status(401).send({ message: "Password does not match" });
+    return res.status(401).send({ message: 'Password does not match' })
   }
-  let jwtToken: string;
+  let jwtToken: string
   try {
     jwtToken = await retrieveJwtToken({
       mail: foundUser.mail,
       name: foundUser.name,
-    });
+    })
   } catch (e) {
     return res.status(500).send({
       message: `Error occurred when retrieving jwtToken from server: ${
         e instanceof Error ? e.message : e
       }`,
-    });
+    })
   }
 
   const user: IUser = {
@@ -117,15 +123,15 @@ router.post('/credentials', async (req, res) => {
     email: foundUser.mail,
     avatar: foundUser.avatar,
     jwtToken: jwtToken,
-    id: "0",
-  };
+    id: '0',
+  }
 
-  return res.status(200).send(user);
+  return res.status(200).send(user)
 })
 
 router.post('/register', async (req, res) => {
   /* Check if user exists in database */
-  const foundUser = await getUser(req.body.email);
+  const foundUser = await getUser(req.body.email)
   if (foundUser) {
     return res.status(401).send({ message: 'User already exists' })
   }
@@ -139,14 +145,14 @@ router.post('/register', async (req, res) => {
    * }
    */
   try {
-    const newUser = req.body as SqlUser;
+    const newUser = req.body as SqlUser
     /* Default a unknown avatar */
     newUser.avatar =
       'https://t3.ftcdn.net/jpg/03/53/11/00/360_F_353110097_nbpmfn9iHlxef4EDIhXB1tdTD0lcWhG9.jpg'
-    if (typeof newUser.pass === "string") {
-      newUser.pass = encryptPassword(newUser.pass);
+    if (typeof newUser.pass === 'string') {
+      newUser.pass = encryptPassword(newUser.pass)
     }
-    await createUser(newUser);
+    await createUser(newUser)
     return res.status(200).send({ message: 'User created' })
   } catch (err) {
     console.log(err)
@@ -155,12 +161,12 @@ router.post('/register', async (req, res) => {
 })
 
 router.get('/have-pass', async (req, res) => {
-  if (typeof req.query.email !== "string") {
-    return res.status(400).send({ err: "User not found" });
+  if (typeof req.query.email !== 'string') {
+    return res.status(400).send({ err: 'User not found' })
   }
-  const foundUser = await getUser(req.query.email);
+  const foundUser = await getUser(req.query.email)
   if (!foundUser) return res.status(400).send({ err: 'User not found' })
-  if (!foundUser.pass) return res.status(200).send({ havePass: false });
+  if (!foundUser.pass) return res.status(200).send({ havePass: false })
   return res.status(200).send({ havePass: true })
 })
 

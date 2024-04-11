@@ -1,7 +1,7 @@
 import nodemailer from 'nodemailer'
 import bcrypt from 'bcrypt'
 import express from 'express'
-import * as grpc from "@grpc/grpc-js"
+import * as grpc from '@grpc/grpc-js'
 import { User, Token } from '@/src/models'
 import * as auth_service from '@/protobuffs/auth-service/auth-service'
 import { env } from '../utils/dotenv'
@@ -9,7 +9,10 @@ import { env } from '../utils/dotenv'
 const MAIL_HOST = process.env.MAIL_HOST
 const MAIL_USER = process.env.MAIL_USER
 const MAIL_PASS = process.env.MAIL_PASS
-const authClient = new auth_service.AuthServiceClient(env.AUTH_SERVICE_URL, grpc.ChannelCredentials.createInsecure())
+const authClient = new auth_service.AuthServiceClient(
+  env.AUTH_SERVICE_URL,
+  grpc.ChannelCredentials.createInsecure()
+)
 
 export async function sendMail(email: string, content: string): Promise<void> {
   const config = {
@@ -66,11 +69,11 @@ export function comparePassword(
   plainText: string | Buffer,
   encryptedText: string
 ) {
-  return bcrypt.compareSync(plainText, encryptedText);
+  return bcrypt.compareSync(plainText, encryptedText)
 }
 
 export function encryptPassword(plainText: string) {
-  return bcrypt.hashSync(plainText, 10);
+  return bcrypt.hashSync(plainText, 10)
 }
 
 export function jwtProtect(
@@ -82,22 +85,20 @@ export function jwtProtect(
   if (!req.headers.authorization)
     return res.send({ message: 'No token provided', verified: false })
 
-  const token = req.headers.authorization;
+  const token = req.headers.authorization
   authClient.verifyToken({ token: token }, (err, response) => {
     if (err) {
-      console.warn("Error occurred when verifying JWT:" + err.message);
+      console.warn('Error occurred when verifying JWT:' + err.message)
       return res
         .status(500)
-        .send({ message: "Error occurred when verifying JWT" });
+        .send({ message: 'Error occurred when verifying JWT' })
     }
-    if (response.message === "Failed" || response.jwtContent === undefined) {
-      return res
-        .status(400)
-        .send({ error: "Verify not pass", verified: false });
+    if (response.message === 'Failed' || response.jwtContent === undefined) {
+      return res.status(400).send({ error: 'Verify not pass', verified: false })
     }
-    req.body.decoded = response.jwtContent;
-    next();
-  });
+    req.body.decoded = response.jwtContent
+    next()
+  })
 }
 
 export async function retrieveJwtToken(
@@ -106,10 +107,10 @@ export async function retrieveJwtToken(
   return new Promise((resolve: (jwtToken: string) => void, reject) => {
     authClient.generateToken(genTokenReq, (err, response) => {
       if (err) {
-        reject(err);
+        reject(err)
       } else {
-        resolve(response.token);
+        resolve(response.token)
       }
-    });
-  });
+    })
+  })
 }
