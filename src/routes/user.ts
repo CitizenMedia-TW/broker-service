@@ -17,7 +17,6 @@ router.get('/public-profile/:mail', async (req, res) => {
 })
 
 router.get('/profile-links', jwtProtect, async (req, res) => {
-  if (!req.params.mail) return res.status(400).send({ error: 'Invalid mail' })
   const user = await getUser(req.body.decoded.mail)
   if (!user) return res.status(400).send({ error: 'User not found' })
   return res.status(200).send({
