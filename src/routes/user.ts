@@ -27,18 +27,13 @@ router.get('/profile-links', jwtProtect, async (req, res) => {
 router.patch('/profile-links', jwtProtect, async (req, res) => {
   /*
    * req.body = {
-   *  remove: string[],
-   *  add: string[]
+   *  modify: string,
    * }
    */
-  const links: string[] = req.body.remove.concat(req.body.add)
-  for (let i = 0; i < links.length; i++) {
-    if (typeof links[i] !== 'string')
-      return res.status(400).send({ error: 'Invalid link' })
-    const patchRes = await patchLinks(req.body.decoded.mail, links[i])
-    if (!patchRes)
-      return res.status(500).send({ error: 'Error patching links' })
-  }
+  if (!req.body.modify || typeof req.body.modify !== 'string')
+    return res.status(400).send({ error: 'Invalid request body' })
+  const patchRes = await patchLinks(req.body.decoded.mail, req.body.modify)
+  if (!patchRes) return res.status(500).send({ error: 'Error patching links' })
   return res.status(200).send({ message: 'Links patched successfully' })
 })
 
