@@ -16,8 +16,10 @@ router.get('/public-profile/:mail', async (req, res) => {
   })
 })
 
-router.get('/profile-links', jwtProtect, async (req, res) => {
-  const user = await getUser(req.body.decoded.mail)
+router.get('/profile-links/:mail', async (req, res) => {
+  const mail = req.params.mail
+  if (!mail) return res.status(400).send({ error: 'Mail not provided' })
+  const user = await getUser(mail)
   if (!user) return res.status(400).send({ error: 'User not found' })
   return res.status(200).send({
     links: user.links,
