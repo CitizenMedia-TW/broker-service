@@ -4,11 +4,8 @@ import express from 'express'
 import * as grpc from '@grpc/grpc-js'
 import { User, Token } from '@/src/models'
 import * as auth_service from '@/protobuffs/auth-service/auth-service'
-import { env } from '../utils/dotenv'
+import { env } from '../constants'
 
-const MAIL_HOST = process.env.MAIL_HOST
-const MAIL_USER = process.env.MAIL_USER
-const MAIL_PASS = process.env.MAIL_PASS
 const authClient = new auth_service.AuthServiceClient(
   env.AUTH_SERVICE_URL,
   grpc.ChannelCredentials.createInsecure()
@@ -16,11 +13,11 @@ const authClient = new auth_service.AuthServiceClient(
 
 export async function sendMail(email: string, content: string): Promise<void> {
   const config = {
-    service: MAIL_HOST,
+    service: env.MAIL_HOST,
     port: 465,
     auth: {
-      user: MAIL_USER,
-      pass: MAIL_PASS,
+      user: env.MAIL_USER,
+      pass: env.MAIL_PASS,
     },
   }
   const transporter = nodemailer.createTransport(config)

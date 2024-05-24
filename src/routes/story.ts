@@ -2,7 +2,7 @@ import express from 'express'
 import { User, Story } from '@/src/models'
 import { jwtProtect } from './auth.utils' // Require Headers Authorization
 import jwt from 'jsonwebtoken'
-import { JWT_SECRET } from '@/src/constants'
+import { env } from '@/src/constants'
 const router = express.Router()
 
 router.use((_req, _res, next) => {
@@ -31,7 +31,7 @@ interface DecodedToken {
 }
 router.get('/retrieve', jwtProtect, async (req, res) => {
   const token = (req.headers.authorization as string).split(' ')[1]
-  return jwt.verify(token, JWT_SECRET, async (_err, decoded) => {
+  return jwt.verify(token, env.JWT_SECRET, async (_err, decoded) => {
     decoded = decoded as DecodedToken
     const id = decoded.id
     const user = await User.findOne({ _id: id })

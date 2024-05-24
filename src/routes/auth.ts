@@ -11,7 +11,7 @@ import {
   comparePassword,
   encryptPassword,
 } from './auth.utils'
-import { JWT_SECRET } from '@/src/constants'
+import { env } from '@/src/constants'
 import { getUser, type User as SqlUser } from '../database/get'
 import { type NewUser, createUser } from '../database/post'
 
@@ -172,7 +172,7 @@ router.get('/have-pass', async (req, res) => {
 
 router.get('/verify', (req, res) => {
   const token = (req.headers.authorization as string).split(' ')[1]
-  jwt.verify(token, JWT_SECRET, (err, _decoded) => {
+  jwt.verify(token, env.JWT_SECRET, (err, _decoded) => {
     if (err) {
       /* console.log(err) */
       if (err.name == 'TokenExpiredError') {
