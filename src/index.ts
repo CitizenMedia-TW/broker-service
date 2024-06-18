@@ -3,31 +3,30 @@ import express from 'express'
 import cors from 'cors'
 require('module-alias/register') // Required for module aliasing
 const app = express()
+const cookieParser = require('cookie-parser')
 
-/* Not sure if this is needed but too scared to remove it */
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
-app.use(cors())
+app.use(cors({ origin: true, credentials: true }))
+app.use(cookieParser())
 
 /* Connect to the MongoDB database */
 require('./database')
 require('./constants')
 
-import { getUser } from './database/get'
-import { patchLinks } from './database/patch'
-import { createUser } from './database/post'
-import { deleteUser } from './database/delete'
-
-app.get('/', async (_req, res) => {
-  const name = 'dev'
-  const mail = 'dev@dev.com'
-  const avatar = 'https://avatar.com'
-  // const i = await createUser({ name, mail, avatar })
-  // const i = await deleteUser(mail)
-  // const u = await getUser('user1@example.com')
-  // const p = await patchLinks('user1@example.com', 'https://profile.com/0')
-  console.log()
-  res.send()
+/* Cookie test */
+app.post('/', async (req, res) => {
+  res.cookie('access_token', 456, {
+    httpOnly: true,
+    maxAge: 1000 * 60, // 1 minute
+    secure: true,
+    sameSite: 'lax',
+  })
+  res.status(200).send({ mes: 'Cookie set' })
+})
+app.get('/', async (req, res) => {
+  console.log('from post: ', req.cookies)
+  res.status(200).send({ mes: req.cookies })
 })
 
 import { authRoute } from './routes'
