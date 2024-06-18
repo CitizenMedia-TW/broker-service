@@ -39,4 +39,8 @@ router.patch('/profile-links', jwtProtect, async (req, res) => {
   return res.status(200).send({ message: 'Links patched successfully' })
 })
 
+router.post('/rate/:comment', jwtProtect, async (req, res) => {})
+
+router.post('/rate/:comment/:subcomment', jwtProtect, async (req, res) => {})
+
 export default router
