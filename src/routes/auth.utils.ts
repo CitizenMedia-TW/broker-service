@@ -3,10 +3,10 @@ import bcrypt from 'bcrypt'
 import express from 'express'
 import * as grpc from '@grpc/grpc-js'
 import { User, Token } from '@/src/models'
-import * as auth_service from '@/protobuffs/auth-service/auth-service'
+import * as auth_service from '@/protobuffs/jwt-service/jwt-service'
 import { env } from '../constants'
 
-const authClient = new auth_service.AuthServiceClient(
+const jwtClient = new auth_service.JWTServiceClient(
   env.AUTH_SERVICE_URL,
   grpc.ChannelCredentials.createInsecure()
 )
@@ -83,7 +83,7 @@ export function jwtProtect(
     return res.send({ message: 'No token provided', verified: false })
 
   const token = req.headers.authorization
-  authClient.verifyToken({ token: token }, (err, response) => {
+  jwtClient.verifyToken({ token: token }, (err, response) => {
     if (err) {
       console.warn('Error occurred when verifying JWT:' + err.message)
       return res
@@ -102,7 +102,7 @@ export async function retrieveJwtToken(
   genTokenReq: auth_service.GenerateTokenRequest
 ) {
   return new Promise((resolve: (jwtToken: string) => void, reject) => {
-    authClient.generateToken(genTokenReq, (err, response) => {
+    jwtClient.generateToken(genTokenReq, (err, response) => {
       if (err) {
         reject(err)
       } else {
