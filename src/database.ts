@@ -10,11 +10,11 @@ import 'dotenv/config'
 /*     console.log(e) */
 /*   }) */
 
-const db = mongoose
-  .connect('mongodb://127.0.0.1:27017/citizen')
-  .then(() => console.log('Connecting to MongoDB'))
-  .catch((e) => {
-    console.log(e)
-  })
-
-export default db
+// const db = mongoose
+//   .connect('mongodb://127.0.0.1:27017/citizen')
+//   .then(() => console.log('Connecting to MongoDB'))
+//   .catch((e) => {
+//     console.log(e)
+//   })
+//
+// export default db
