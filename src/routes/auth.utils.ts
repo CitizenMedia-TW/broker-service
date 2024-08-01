@@ -3,11 +3,17 @@ import bcrypt from 'bcrypt'
 import express from 'express'
 import * as grpc from '@grpc/grpc-js'
 import { User, Token } from '@/src/models'
-import * as auth_service from '@/protobuffs/jwt-service/jwt-service'
+import * as jwt_service from '@/protobuffs/jwt-service/jwt-service'
+import * as auth_service from '@/protobuffs/auth-service/auth-service'
 import { env } from '../constants'
 
-const jwtClient = new auth_service.JWTServiceClient(
+const jwtClient = new jwt_service.JWTServiceClient(
   env.AUTH_SERVICE_URL,
+  grpc.ChannelCredentials.createInsecure()
+)
+
+const authClient = new auth_service.AuthServiceClient(
+  'localhost:50050',
   grpc.ChannelCredentials.createInsecure()
 )
 
@@ -79,27 +85,48 @@ export function jwtProtect(
   next: express.NextFunction
 ) {
   console.log('Checking JWT')
-  if (!req.headers.authorization)
-    return res.send({ message: 'No token provided', verified: false })
+  // if (!req.headers.authorization)
+  //   return res.send({ message: 'No token provided', verified: false })
 
-  const token = req.headers.authorization
-  jwtClient.verifyToken({ token: token }, (err, response) => {
+  if (!req.cookies['accessToken'])
+    return res.send({ message: 'No token provided', verified: false })
+  const token = req.cookies['accessToken']
+
+  authClient.verifyToken({ token: token }, (err, response) => {
     if (err) {
       console.warn('Error occurred when verifying JWT:' + err.message)
       return res
         .status(500)
         .send({ message: 'Error occurred when verifying JWT' })
     }
-    if (response.message === 'Failed' || response.jwtContent === undefined) {
-      return res.status(400).send({ error: 'Verify not pass', verified: false })
+    if (response.expired == true) {
+      return res.status(400).send({ error: 'Token expired', verified: false })
     }
-    req.body.decoded = response.jwtContent
+
+    const jwtContent = JSON.parse(response.claims)
+    req.body.decoded = { user: jwtContent.UserName, mail: jwtContent.UserMail }
     next()
   })
+
+  // const token = req.headers.authorization
+  // jwtClient.verifyToken({ token: token }, (err, response) => {
+  //   if (err) {
+  //     console.warn('Error occurred when verifying JWT:' + err.message)
+  //     return res
+  //       .status(500)
+  //       .send({ message: 'Error occurred when verifying JWT' })
+  //   }
+  //   if (response.message === 'Failed' || response.jwtContent === undefined) {
+  //     return res.status(400).send({ error: 'Verify not pass', verified: false })
+  //   }
+  //   console.log(response.jwtContent)
+  //   req.body.decoded = response.jwtContent
+  //   next()
+  // })
 }
 
 export async function retrieveJwtToken(
-  genTokenReq: auth_service.GenerateTokenRequest
+  genTokenReq: jwt_service.GenerateTokenRequest
 ) {
   return new Promise((resolve: (jwtToken: string) => void, reject) => {
     jwtClient.generateToken(genTokenReq, (err, response) => {

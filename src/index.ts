@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { ErrorRequestHandler } from 'express'
 /* import mongoose from 'mongoose' */
 import cors from 'cors'
 require('module-alias/register') // Required for module aliasing
@@ -37,6 +37,12 @@ app.use('/story', storyRoute)
 
 import { userRoute } from './routes'
 app.use('/user', userRoute)
+
+const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+  console.error(err.stack)
+  res.status(500).send('Internal Server Error')
+}
+app.use(errorHandler)
 
 app.listen(8080, () => {
   console.log('Listening on port 8080')
